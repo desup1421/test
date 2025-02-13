@@ -34,7 +34,7 @@ export const createHero = async (req, res) => {
     if (image) {
       hero.image = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "hero" },
+          { folder: "hero", public_id: "singleton" },
           (error, result) => {
             if (error) {
               console.error(`Error: ${error.message}`);
