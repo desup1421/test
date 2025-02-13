@@ -34,7 +34,7 @@ export const createHero = async (req, res) => {
     if (image) {
       hero.image = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "hero", public_id: "singleton" },
+          { folder: "hero", public_id: "singleton", overwrite: true },
           (error, result) => {
             if (error) {
               console.error(`Error: ${error.message}`);
@@ -58,39 +58,42 @@ export const createHero = async (req, res) => {
   }
 };
 
-// export const updateHero = async (req, res) => {
-//   const id = "singleton";
-//   const hero = req.body;
-//   const image = req.file;
-//   try {
-//     const checkExistingData = await Hero.findById(id);
-//     if (!checkExistingData) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Data not found" });
-//     }
+export const updateHero = async (req, res) => {
+  const id = "singleton";
+  const hero = req.body;
+  const image = req.file;
+  try {
+    const checkExistingData = await Hero.findById(id);
+    if (!checkExistingData) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Data not found" });
+    }
 
-//     if (image) {
-//       const result = await cloudinary.uploader.upload(
-//         path.resolve(image.path),
-//         {
-//           folder: "hero",
-//           public_id: "singelton",
-//           overwrite: true,
-//         }
-//       );
-//       hero.image = result.secure_url;
-//       // Delete image from server
-//       fs.unlinkSync(image.path);
-//     }
+    if (image) {
+      hero.image = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "hero", public_id: "singleton", overwrite: true },
+          (error, result) => {
+            if (error) {
+              console.error(`Error: ${error.message}`);
+              return reject("internal server error");
+            }
+            resolve(result.secure_url);
+          }
+        );
 
-//     const updatedHero = await Hero.findByIdAndUpdate(id, hero, {
-//       new: true,
-//     });
+        uploadStream.end(image.buffer);
+      });
+    }
 
-//     res.status(200).json({ success: true, data: updatedHero });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: "internal server error" });
-//     console.error(`Error: ${error.message}`);
-//   }
-// };
+    const updatedHero = await Hero.findByIdAndUpdate(id, hero, {
+      new: true,
+    });
+
+    res.status(200).json({ success: true, data: updatedHero });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+    console.error(`Error: ${error.message}`);
+  }
+};
