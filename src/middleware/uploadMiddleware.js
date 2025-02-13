@@ -1,17 +1,17 @@
 import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
-const upload = multer({
-  dest: "../uploads/",
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-    const isAllowed = allowedTypes.includes(file.mimetype);
-    if (isAllowed) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type"));
-    }
-  },
+// Konfigurasi penyimpanan di Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "uploads", // Folder di Cloudinary
+    allowed_formats: ["jpg", "png", "jpeg"]
+  }
 });
+
+const upload = multer({ storage });
 
 export const uploadSingle = (req, res, next) => {
   upload.single("image")(req, res, (err) => {
