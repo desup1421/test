@@ -91,7 +91,15 @@ export const createProject = async (req, res) => {
 
 export const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find();
+    let { page, limit } = req.query;
+
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const total = await Project.countDocuments();
+    const projects = await Project.find().skip(skip).limit(limit);
     const summary = projects.map((project) => ({
       id: project._id,
       title: project.title,
@@ -100,7 +108,18 @@ export const getProjects = async (req, res) => {
       slug: project.slug,
       thumb: project.images[0],
     }));
-    res.status(200).json({ success: true, data: summary });
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          projects: summary,
+        },
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(`Error: ${error.message}`);
