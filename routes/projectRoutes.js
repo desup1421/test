@@ -4,7 +4,8 @@ import {
   getProjects,
   deleteProject,
   getProjectDetail,
-  updateProject
+  updateProject,
+  publishProject
 } from "../controllers/projectController.js";
 import { uploadMultiple } from "../middleware/uploadImageMiddleware.js";
 
@@ -15,5 +16,6 @@ router.get("/", getProjects);
 router.delete("/:id", deleteProject);
 router.get("/:id", getProjectDetail);
 router.put("/:id",uploadMultiple, updateProject);
+router.put("/publish/:id", publishProject);
 
 export default router;
