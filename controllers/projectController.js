@@ -106,20 +106,19 @@ export const getProjects = async (req, res) => {
       description: project.description,
       tags: project.technologies,
       slug: project.slug,
+      published: project.published,
       thumb: project.images[0],
     }));
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-          projects: summary,
-        },
-      });
+    res.status(200).json({
+      success: true,
+      data: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        projects: summary,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(`Error: ${error.message}`);
@@ -205,6 +204,24 @@ export const updateProject = async (req, res) => {
       new: true, // Return the updated document
     });
     res.status(200).json({ success: true, data: updatedProject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+    console.log(`Error: ${error.message}`);
+  }
+};
+
+export const publishProject = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const project = await Project.findById(id);
+    project.published = !project.published;
+    await project.save();
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: `Project ${project.published ? "published" : "unpublished"}`,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(`Error: ${error.message}`);
