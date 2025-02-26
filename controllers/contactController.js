@@ -49,3 +49,14 @@ export const getContact = async (req, res) => {
         console.error(`Error: ${error.message}`);
     }
 }
+
+export const deleteContact = async (req, res) => {
+    const {id} = req.params;
+    try {
+        await Contact.findByIdAndDelete(id);
+        res.status(200).json({ success: true, message: "Contact deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "internal server error" });
+        console.error(`Error: ${error.message}`);
+    }
+}
