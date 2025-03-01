@@ -1,13 +1,15 @@
-import express from 'express'
-import {  deleteContact, getContact, postContact } from '../controllers/contactController.js'
+import express from "express";
+import {
+  deleteContact,
+  getContact,
+  postContact,
+} from "../controllers/contactController.js";
+import { apiKeyAuth } from "../middleware/apikeyMiddleware.js";
 
-const router = express.Router()
+const router = express.Router();
 
+router.get("/", apiKeyAuth, getContact);
+router.post("/", apiKeyAuth, postContact);
+router.delete("/:id", apiKeyAuth, deleteContact);
 
-router.get('/', getContact)
-router.post('/', postContact)
-router.delete('/:id', deleteContact) 
-
-
-
-export default router
+export default router;
