@@ -5,11 +5,12 @@ import {
   createHero,
 } from "../controllers/heroController.js";
 import { uploadSingle } from "../middleware/uploadImageMiddleware.js";
+import { apiKeyAuth } from "../middleware/apikeyMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getHero);
-router.post("/", uploadSingle, createHero);
-router.put("/", uploadSingle, updateHero);
+router.get("/", apiKeyAuth, getHero);
+router.post("/", apiKeyAuth, uploadSingle, createHero);
+router.put("/:id", apiKeyAuth, uploadSingle, updateHero);
 
 export default router;
