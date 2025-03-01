@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 
-const heroSchema = new mongoose.Schema ({
-    _id: {
-        type: String,
-        required: true
-    },
-    image: {
-        type: String,
-        required: false
-    },
-    text: {
-        type: String,
-        required: true
-    }
+const heroSchema = new mongoose.Schema({
+  image: {
+    type: String,
+    required: false,
+  },
+  text: {
+    type: String,
+    required: true,
+  },
+  apiKey: {
+    type: String,
+    required: true,
+    index: true,
+  },
 });
 
 const Hero = mongoose.model("Hero", heroSchema);

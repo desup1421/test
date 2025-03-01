@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema({
   title: {
@@ -28,6 +28,11 @@ const projectSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true,
+  },
+  apiKey: {
+    type: String,
+    required: true,
+    index: true,
   },
 });
 

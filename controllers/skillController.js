@@ -2,8 +2,10 @@ import Skills from "../models/skillModel.js";
 import cloudinary from "../config/cloudinary.js";
 
 export const getSkill = async (req, res) => {
+  const apiKey = req.apiKey;
+
   try {
-    const skill = await Skills.find();
+    const skill = await Skills.find({ apiKey }).select("-apiKey");
     res.status(200).json({
       success: true,
       data: skill,
@@ -19,6 +21,7 @@ export const getSkill = async (req, res) => {
 export const postSkill = async (req, res) => {
   const skill = req.body;
   const image = req.file;
+  const apiKey = req.apiKey;
 
   // Upload image to cloudinary
 
@@ -50,11 +53,15 @@ export const postSkill = async (req, res) => {
         uploadStream.end(image.buffer);
       });
     }
-    const newSkill = new Skills(skill);
+    const newSkill = new Skills({ ...skill, apiKey });
     await newSkill.save();
+
+    const responseData = newSkill.toObject();
+    delete responseData.apiKey;
+
     res.status(201).json({
       success: true,
-      data: newSkill,
+      data: responseData,
     });
   } catch (error) {
     res.status(500).json({
@@ -68,9 +75,10 @@ export const updateSkill = async (req, res) => {
   const { id } = req.params;
   const skill = req.body;
   const image = req.file;
+  const apiKey = req.apiKey;
 
   try {
-   const existingSkill = await Skills.findById(id);
+    const existingSkill = await Skills.findOne({ _id: id, apiKey });
 
     if (!existingSkill) {
       return res.status(404).json({ message: "Skill not found" });
@@ -92,12 +100,10 @@ export const updateSkill = async (req, res) => {
         uploadStream.end(image.buffer);
       });
     }
-    
-
 
     const updateSkill = await Skills.findByIdAndUpdate(id, skill, {
       new: true,
-    })
+    }).select("-apiKey");
     const newSkill = await updateSkill.save();
     res.status(201).json({
       success: true,
@@ -113,9 +119,18 @@ export const updateSkill = async (req, res) => {
 
 export const deleteSkill = async (req, res) => {
   const { id } = req.params;
+  const apiKey = req.apiKey;
 
   try {
-    await Skills.findByIdAndDelete(id);
+    const deletedSkill = await Skills.findOneAndDelete({ _id: id, apiKey });
+
+    if (!deletedSkill) {
+      return res.status(404).json({
+        success: false,
+        message: "Skill not found or invalid API key",
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Skill deleted successfully",

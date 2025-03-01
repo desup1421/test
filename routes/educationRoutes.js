@@ -5,12 +5,13 @@ import {
   updateEducation,
   deleteEducation,
 } from "../controllers/educationController.js";
+import { apiKeyAuth } from "../middleware/apikeyMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getEducation);
-router.post("/", createEducation);
-router.put("/:id", updateEducation);
-router.delete("/:id", deleteEducation);
+router.get("/", apiKeyAuth, getEducation);
+router.post("/", apiKeyAuth, createEducation);
+router.put("/:id", apiKeyAuth, updateEducation);
+router.delete("/:id", apiKeyAuth, deleteEducation);
 
 export default router;

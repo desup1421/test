@@ -3,7 +3,7 @@ import Hero from "../models/heroModel.js";
 
 export const getHero = async (req, res) => {
   try {
-    const hero = await Hero.find();
+    const hero = await Hero.find({ apiKey: req.apiKey }).select("-apiKey");
     res.status(200).json({ success: true, data: hero });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
@@ -14,6 +14,7 @@ export const getHero = async (req, res) => {
 export const createHero = async (req, res) => {
   const hero = req.body;
   const image = req.file;
+  const apiKey = req.apiKey;
 
   if (!hero.text) {
     return res
@@ -22,7 +23,7 @@ export const createHero = async (req, res) => {
   }
 
   try {
-    const checkExistingData = await Hero.findOne({ _id: "singleton" });
+    const checkExistingData = await Hero.findOne({ apiKey });
     // Check is data is already exist in database
     if (checkExistingData) {
       return res
@@ -34,7 +35,7 @@ export const createHero = async (req, res) => {
     if (image) {
       hero.image = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "hero", public_id: "singleton", overwrite: true },
+          { folder: "hero", public_id: apiKey, overwrite: true },
           (error, result) => {
             if (error) {
               console.error(`Error: ${error.message}`);
@@ -49,9 +50,11 @@ export const createHero = async (req, res) => {
     }
 
     // If data doesn't exist in database then create a new data
-    const newHero = new Hero({ _id: "singleton", ...hero });
+    const newHero = new Hero({ ...hero, apiKey });
     await newHero.save();
-    res.status(201).json({ success: true, data: newHero });
+    const responseHero = newHero.toObject();
+    delete responseHero.apiKey;
+    res.status(201).json({ success: true, data: responseHero });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.error(`Error: ${error.message}`);
@@ -59,11 +62,12 @@ export const createHero = async (req, res) => {
 };
 
 export const updateHero = async (req, res) => {
-  const id = "singleton";
+  const { id } = req.params;
   const hero = req.body;
   const image = req.file;
+  const apiKey = req.apiKey;
   try {
-    const checkExistingData = await Hero.findById(id);
+    const checkExistingData = await Hero.findOne({ _id: id, apiKey });
     if (!checkExistingData) {
       return res
         .status(404)
@@ -73,7 +77,7 @@ export const updateHero = async (req, res) => {
     if (image) {
       hero.image = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "hero", public_id: "singleton", overwrite: true },
+          { folder: "hero", public_id: id, overwrite: true },
           (error, result) => {
             if (error) {
               console.error(`Error: ${error.message}`);
@@ -89,7 +93,10 @@ export const updateHero = async (req, res) => {
 
     const updatedHero = await Hero.findByIdAndUpdate(id, hero, {
       new: true,
+      lean: true,
     });
+
+    delete updatedHero.apiKey;
 
     res.status(200).json({ success: true, data: updatedHero });
   } catch (error) {
