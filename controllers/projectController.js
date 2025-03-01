@@ -4,6 +4,7 @@ export const createProject = async (req, res) => {
   const project = req.body;
   const images = req.files;
   const errors = [];
+  const apiKey = req.apiKey;
 
   if (!project.title) {
     const message = "Title is required";
@@ -46,7 +47,7 @@ export const createProject = async (req, res) => {
   }
 
   try {
-    const newProject = Project(project);
+    const newProject = new Project({ ...project, apiKey });
     const uploadResults = await Promise.all(
       images.map((file, index) => {
         return new Promise((resolve, reject) => {
@@ -79,9 +80,13 @@ export const createProject = async (req, res) => {
     newProject.images = uploadResults;
     newProject.technologies = technologies;
     await newProject.save();
+
+    const responseData = newProject.toObject();
+    delete responseData.apiKey;
+
     res.status(201).json({
       success: true,
-      data: newProject,
+      data: responseData,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
@@ -92,6 +97,7 @@ export const createProject = async (req, res) => {
 export const getProjects = async (req, res) => {
   try {
     let { page, limit } = req.query;
+    const apiKey = req.apiKey;
 
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
@@ -99,7 +105,7 @@ export const getProjects = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const total = await Project.countDocuments();
-    const projects = await Project.find().skip(skip).limit(limit);
+    const projects = await Project.find({ apiKey }).skip(skip).limit(limit);
     const summary = projects.map((project) => ({
       id: project._id,
       title: project.title,
@@ -108,18 +114,16 @@ export const getProjects = async (req, res) => {
       slug: project.slug,
       thumb: project.images[0],
     }));
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-          projects: summary,
-        },
-      });
+    res.status(200).json({
+      success: true,
+      data: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        projects: summary,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(`Error: ${error.message}`);
@@ -128,8 +132,14 @@ export const getProjects = async (req, res) => {
 
 export const getProjectDetail = async (req, res) => {
   const { id } = req.params;
+  const apiKey = req.apiKey;
   try {
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, apiKey }).select(
+      "-apiKey"
+    );
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
     res.status(200).json({ success: true, data: project });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal sever error" });
@@ -139,10 +149,15 @@ export const getProjectDetail = async (req, res) => {
 
 export const deleteProject = async (req, res) => {
   const { id } = req.params;
-  try {
-    const data = await Project.findById(id);
-    const images = data.images;
+  const apiKey = req.apiKey;
 
+  try {
+    const data = await Project.findOne({ _id: id, apiKey });
+    if (!data) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    const images = data.images;
     const deleteImage = await Promise.all(
       images.map((imageLink) => {
         const arrayLink = imageLink.split("/");
@@ -165,8 +180,14 @@ export const updateProject = async (req, res) => {
   const { id } = req.params;
   const project = req.body;
   const images = req.files;
+  const apiKey = req.apiKey;
 
   try {
+    const existingSkill = await Project.findOne({ _id: id, apiKey });
+    if (!existingSkill) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
     if (images.length > 0) {
       const uploadResults = await Promise.all(
         images.map((file, index) => {
@@ -203,7 +224,7 @@ export const updateProject = async (req, res) => {
     project.technologies = technologies;
     const updatedProject = await Project.findByIdAndUpdate(id, project, {
       new: true, // Return the updated document
-    });
+    }).select("-apiKey");
     res.status(200).json({ success: true, data: updatedProject });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
