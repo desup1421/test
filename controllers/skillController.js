@@ -122,7 +122,15 @@ export const deleteSkill = async (req, res) => {
   const apiKey = req.apiKey;
 
   try {
-    await Skills.findOneAndDelete({ _id: id, apiKey });
+    const deletedSkill = await Skills.findOneAndDelete({ _id: id, apiKey });
+
+    if (!deletedSkill) {
+      return res.status(404).json({
+        success: false,
+        message: "Skill not found or invalid API key",
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Skill deleted successfully",
