@@ -11,6 +11,6 @@ const router = express.Router();
 
 router.get("/", apiKeyAuth, getHero);
 router.post("/", apiKeyAuth, uploadSingle, createHero);
-router.put("/:id", apiKeyAuth, uploadSingle, updateHero);
+router.put("/", apiKeyAuth, uploadSingle, updateHero);
 
 export default router;
