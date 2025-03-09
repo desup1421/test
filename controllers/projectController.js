@@ -20,8 +20,8 @@ export const createProject = async (req, res) => {
     errors.push({ path: "technologies", message });
   }
 
-  if (!images) {
-    const message = "Images is required";
+  if (!project.cover) {
+    const message = "Cover is required";
     errors.push({ path: "images", message });
   }
 
@@ -50,7 +50,7 @@ export const createProject = async (req, res) => {
     const uploadResults = await Promise.all(
       images.map((file, index) => {
         return new Promise((resolve, reject) => {
-          const publicId = `${project.slug}-${index}`;
+          const publicId = `${newProject._id}-${index}`;
           const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: "projects",
@@ -62,7 +62,7 @@ export const createProject = async (req, res) => {
                 console.error("Cloudinary upload error:", error);
                 return reject(error);
               }
-              resolve(result.secure_url);
+              resolve({index, url:result.secure_url});
             }
           );
 
@@ -107,7 +107,7 @@ export const getProjects = async (req, res) => {
       tags: project.technologies,
       slug: project.slug,
       published: project.published,
-      thumb: project.images[0],
+      thumb: project.images[project.cover].url,
     }));
     res.status(200).json({
       success: true,
@@ -164,42 +164,48 @@ export const updateProject = async (req, res) => {
   const { id } = req.params;
   const project = req.body;
   const images = req.files;
+  console.log(`images: ${images.length}`);
+  console.log(`body: ${project.images}`);
 
   try {
-    if (images.length > 0) {
-      const uploadResults = await Promise.all(
-        images.map((file, index) => {
-          return new Promise((resolve, reject) => {
-            const publicId = `${project.slug}-${index}`;
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                folder: "projects",
-                public_id: publicId,
-                overwrite: true,
-              },
-              (error, result) => {
-                if (error) {
-                  console.error("Cloudinary upload error:", error);
-                  return reject(error);
-                }
-                resolve(result.secure_url);
-              }
-            );
+    
+    // if (images.length > 0) {
+    //   const uploadResults = await Promise.all(
+    //     images.map((file, index) => {
+    //       return new Promise((resolve, reject) => {
+    //         const publicId = `${id}-${index}`;
+    //         const uploadStream = cloudinary.uploader.upload_stream(
+    //           {
+    //             folder: "projects",
+    //             public_id: publicId,
+    //             overwrite: true,
+    //           },
+    //           (error, result) => {
+    //             if (error) {
+    //               console.error("Cloudinary upload error:", error);
+    //               return reject(error);
+    //             }
+    //             resolve(result.secure_url);
+    //           }
+    //         );
 
-            uploadStream.end(file.buffer);
-          });
-        })
-      );
+    //         uploadStream.end(file.buffer);
+    //       });
+    //     })
+    //   );
 
-      project.images = uploadResults;
-    }
+    //   project.images = uploadResults;
+    // }
 
-    const technologies = project.technologies
-      .trim()
-      .split(",")
-      .map((tech) => tech.trim());
+    const technologies = Array.isArray(project.technologies)
+      ? project.technologies
+      : project.technologies
+          .trim()
+          .split(",")
+          .map((tech) => tech.trim());
 
     project.technologies = technologies;
+    project.images = JSON.parse(project.images);
     const updatedProject = await Project.findByIdAndUpdate(id, project, {
       new: true, // Return the updated document
     });
@@ -216,12 +222,10 @@ export const publishProject = async (req, res) => {
     const project = await Project.findById(id);
     project.published = !project.published;
     await project.save();
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: `Project ${project.published ? "published" : "unpublished"}`,
-      });
+    res.status(200).json({
+      success: true,
+      message: `Project ${project.published ? "published" : "unpublished"}`,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(`Error: ${error.message}`);

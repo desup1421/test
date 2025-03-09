@@ -9,10 +9,20 @@ const projectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  images: {
-    type: [String],
+  cover: {
+    type: String,
     required: true,
   },
+  images: [{
+    index: {
+      type: String,
+      required: true,
+    },
+    url: {
+      type: String,
+      required: true,
+    },
+  }],
   technologies: {
     type: [String],
     required: true,
